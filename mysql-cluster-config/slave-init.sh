@@ -244,11 +244,13 @@ CHANGE REPLICATION SOURCE TO
     SOURCE_PASSWORD='${MYSQL_REPLICATION_PASSWORD}',
     SOURCE_AUTO_POSITION=1;
 
--- 启动从服务器复制
-        START REPLICA;
-        
-        -- 显示从服务器状态
-        SHOW REPLICA STATUS\G
+echo "在从服务器上创建HAProxy健康检查用户..."
+mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SET GLOBAL super_read_only = OFF; CREATE USER IF NOT EXISTS 'haproxy_check'@'%' IDENTIFIED BY 'check_password'; SET GLOBAL super_read_only = ON;"
+
+echo "启动从服务器复制..."
+mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "START REPLICA;"
+
+echo "等待从服务器追赶主服务器..."
 EOSQL
     
     # 执行 SQL 文件
@@ -409,6 +411,13 @@ test_replication() {
 main() {
     log_info "==================== 从服务器初始化开始 ===================="
     
+    # 检查从服务器是否已经配置
+    if [ -f "/var/lib/mysql/.slave_configured" ]; then
+        echo "从服务器已经配置，跳过初始化"
+        exit 0
+    fi
+
+    echo "正在等待主服务器..."
     # 检查是否已经初始化过
     if [ -f "/tmp/slave-initialized" ]; then
         log_info "从服务器已经初始化过"
