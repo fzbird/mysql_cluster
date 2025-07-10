@@ -22,11 +22,11 @@ read-only = 1
 super-read-only = 1
 
 # 复制配置
-skip-slave-start = 1
-slave-parallel-type = LOGICAL_CLOCK
-slave-parallel-workers = 4
-slave-preserve-commit-order = 1
-slave-pending-jobs-size-max = 134217728
+skip-replica-start = 1
+replica-parallel-type = LOGICAL_CLOCK
+replica-parallel-workers = 4
+replica-preserve-commit-order = 1
+replica-pending-jobs-size-max = 134217728
 
 # 连接配置
 max-connections = 1000
@@ -82,8 +82,8 @@ max-heap-table-size = 64M
 myisam-sort-buffer-size = 8M
 
 # 从服务器特定配置
-slave-net-timeout = 60
-slave-load-tmpdir = /tmp
+replica-net-timeout = 60
+replica-load-tmpdir = /tmp
 
 [mysql]
 default-character-set = utf8mb4

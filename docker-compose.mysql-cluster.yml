@@ -131,15 +131,15 @@ services:
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
       --binlog-checksum=CRC32
-      --slave-sql-verify-checksum=1
+      --replica-sql-verify-checksum=1
       --relay-log=mysql-relay-bin
-      --log-slave-updates=1
+      --log-replica-updates=1
       --read-only=1
       --super-read-only=1
-      --skip-slave-start=1
-      --slave-parallel-type=LOGICAL_CLOCK
-      --slave-parallel-workers=4
-      --slave-preserve-commit-order=1
+      --skip-replica-start=1
+      --replica-parallel-type=LOGICAL_CLOCK
+      --replica-parallel-workers=4
+      --replica-preserve-commit-order=1
       --max-connections=1000
       --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
       --slow-query-log=1
@@ -260,7 +260,7 @@ services:
     container_name: mysql_monitor
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "root:${MYSQL_ROOT_PASSWORD:-fzbird20250615}@(mysql-master:3306)/"
+      DATA_SOURCE_NAME: "root:${MYSQL_ROOT_PASSWORD:-fzbird20250615}@tcp(mysql-master:3306)/"
     ports:
       - "${MYSQL_MONITOR_PORT:-9104}:9104"
     command:
@@ -275,8 +275,6 @@ services:
       - '--collect.info_schema.innodb_tablespaces'
       - '--collect.info_schema.query_response_time'
       - '--collect.info_schema.replica_host'
-      - '--collect.slave_lag'
-      - '--collect.slave_hosts'
       - '--collect.info_schema.schemastats'
     depends_on:
       mysql-master:

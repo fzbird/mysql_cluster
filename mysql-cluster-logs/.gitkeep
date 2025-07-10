@@ -1,2 +1,0 @@
-# This file ensures the mysql-cluster-logs directory is tracked by Git
-# while ignoring all actual log files within subdirectories 

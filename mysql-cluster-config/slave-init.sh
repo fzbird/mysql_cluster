@@ -52,12 +52,12 @@ check_env_vars() {
     
     if [ -z "$MYSQL_MASTER_HOST" ]; then
         log_warning "MYSQL_MASTER_HOST 环境变量未设置，使用默认值 'mysql-master'"
-        MYSQL_MASTER_HOST="mysql-master"
+        MYSQL_SOURCE_HOST="mysql-master"
     fi
     
     if [ -z "$MYSQL_MASTER_PORT" ]; then
         log_warning "MYSQL_MASTER_PORT 环境变量未设置，使用默认值 '3306'"
-        MYSQL_MASTER_PORT="3306"
+        MYSQL_SOURCE_PORT="3306"
     fi
     
     if [ -z "$MYSQL_REPLICATION_USER" ]; then
@@ -165,10 +165,10 @@ SET GLOBAL read_only = 1;
 SET GLOBAL super_read_only = 1;
 
 -- 停止从服务器复制（如果正在运行）
-STOP SLAVE;
+STOP REPLICA;
 
 -- 重置从服务器状态
-RESET SLAVE ALL;
+RESET REPLICA ALL;
 
 -- 创建数据库（如果不存在）
 CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE} 
@@ -195,7 +195,7 @@ INSERT INTO cluster_status (server_role, status) VALUES ('slave', 'initialized')
 SHOW DATABASES;
 
 -- 显示从服务器状态
-SHOW SLAVE STATUS\G
+SHOW REPLICA STATUS\G
 EOSQL
     
     # 执行 SQL 文件
@@ -231,24 +231,24 @@ configure_replication() {
 -- 生成时间: $(date)
 
 -- 停止从服务器复制
-STOP SLAVE;
+STOP REPLICA;
 
 -- 重置从服务器状态
-RESET SLAVE ALL;
+RESET REPLICA ALL;
 
 -- 配置主服务器连接
-CHANGE MASTER TO
-    MASTER_HOST='${MYSQL_MASTER_HOST}',
-    MASTER_PORT=${MYSQL_MASTER_PORT},
-    MASTER_USER='${MYSQL_REPLICATION_USER}',
-    MASTER_PASSWORD='${MYSQL_REPLICATION_PASSWORD}',
-    MASTER_AUTO_POSITION=1;
+CHANGE REPLICATION SOURCE TO
+    SOURCE_HOST='${MYSQL_MASTER_HOST}',
+    SOURCE_PORT=${MYSQL_MASTER_PORT},
+    SOURCE_USER='${MYSQL_REPLICATION_USER}',
+    SOURCE_PASSWORD='${MYSQL_REPLICATION_PASSWORD}',
+    SOURCE_AUTO_POSITION=1;
 
 -- 启动从服务器复制
-START SLAVE;
-
--- 显示从服务器状态
-SHOW SLAVE STATUS\G
+        START REPLICA;
+        
+        -- 显示从服务器状态
+        SHOW REPLICA STATUS\G
 EOSQL
     
     # 执行 SQL 文件
@@ -277,7 +277,7 @@ check_replication_status() {
     sleep 10
     
     # 获取复制状态
-    local slave_status=$(mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SHOW SLAVE STATUS\G" 2>/dev/null)
+    local slave_status=$(mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SHOW REPLICA STATUS\G" 2>/dev/null)
     
     if [ -z "$slave_status" ]; then
         log_error "无法获取从服务器状态"
@@ -285,10 +285,10 @@ check_replication_status() {
     fi
     
     # 解析复制状态
-    local io_running=$(echo "$slave_status" | grep "Slave_IO_Running" | awk '{print $2}')
-    local sql_running=$(echo "$slave_status" | grep "Slave_SQL_Running" | awk '{print $2}')
+    local io_running=$(echo "$slave_status" | grep "Replica_IO_Running" | awk '{print $2}')
+    local sql_running=$(echo "$slave_status" | grep "Replica_SQL_Running" | awk '{print $2}')
     local last_error=$(echo "$slave_status" | grep "Last_Error" | cut -d: -f2-)
-    local seconds_behind=$(echo "$slave_status" | grep "Seconds_Behind_Master" | awk '{print $2}')
+    local seconds_behind=$(echo "$slave_status" | grep "Seconds_Behind_Source" | awk '{print $2}')
     
     log_info "从服务器复制状态："
     log_info "  IO线程运行状态: $io_running"

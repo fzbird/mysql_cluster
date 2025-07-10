@@ -345,12 +345,12 @@ setup_replication() {
     if docker exec -i "$SLAVE_CONTAINER" mysql -u root -p"$root_password" <<-EOSQL
         STOP SLAVE;
         RESET SLAVE ALL;
-        CHANGE MASTER TO
-            MASTER_HOST='mysql-master',
-            MASTER_PORT=3306,
-            MASTER_USER='$repl_user',
-            MASTER_PASSWORD='$repl_password',
-            MASTER_AUTO_POSITION=1;
+        CHANGE REPLICATION SOURCE TO
+            SOURCE_HOST='mysql-master',
+            SOURCE_PORT=3306,
+            SOURCE_USER='$repl_user',
+            SOURCE_PASSWORD='$repl_password',
+            SOURCE_AUTO_POSITION=1;
         START SLAVE;
 EOSQL
     then
@@ -382,11 +382,11 @@ check_replication_status() {
     # 检查从服务器状态
     print_info "从服务器复制状态："
     local slave_status
-    if slave_status=$(docker exec "$SLAVE_CONTAINER" mysql -u root -p"$root_password" -e "SHOW SLAVE STATUS\G" 2>/dev/null); then
-        local io_running=$(echo "$slave_status" | grep "Slave_IO_Running" | awk '{print $2}')
-        local sql_running=$(echo "$slave_status" | grep "Slave_SQL_Running" | awk '{print $2}')
+    if slave_status=$(docker exec "$SLAVE_CONTAINER" mysql -u root -p"$root_password" -e "SHOW REPLICA STATUS\G" 2>/dev/null); then
+        local io_running=$(echo "$slave_status" | grep "Replica_IO_Running" | awk '{print $2}')
+        local sql_running=$(echo "$slave_status" | grep "Replica_SQL_Running" | awk '{print $2}')
         local last_error=$(echo "$slave_status" | grep "Last_Error" | cut -d: -f2-)
-        local seconds_behind=$(echo "$slave_status" | grep "Seconds_Behind_Master" | awk '{print $2}')
+        local seconds_behind=$(echo "$slave_status" | grep "Seconds_Behind_Source" | awk '{print $2}')
         
         echo "  IO线程运行状态: $io_running"
         echo "  SQL线程运行状态: $sql_running"
@@ -452,7 +452,7 @@ show_connection_info() {
     local master_port slave_port proxy_write_port proxy_read_port stats_port monitor_port
     
     if [ -f "$ENV_FILE" ]; then
-        master_port=$(grep "^MYSQL_MASTER_PORT=" "$ENV_FILE" | cut -d'=' -f2)
+        master_port=$(grep "^MYSQL_SOURCE_PORT=" "$ENV_FILE" | cut -d'=' -f2)
         slave_port=$(grep "^MYSQL_SLAVE_PORT=" "$ENV_FILE" | cut -d'=' -f2)
         proxy_write_port=$(grep "^MYSQL_PROXY_WRITE_PORT=" "$ENV_FILE" | cut -d'=' -f2)
         proxy_read_port=$(grep "^MYSQL_PROXY_READ_PORT=" "$ENV_FILE" | cut -d'=' -f2)
