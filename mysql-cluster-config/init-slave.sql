@@ -2,11 +2,7 @@
 -- MySQL 从服务器初始化脚本
 -- ========================================================================
 
--- 设置全局配置
-SET GLOBAL enforce_gtid_consistency = ON;
-SET GLOBAL gtid_mode = OFF_PERMISSIVE;
-SET GLOBAL gtid_mode = ON_PERMISSIVE;
-SET GLOBAL gtid_mode = ON;
+-- GTID模式已在Docker启动参数中配置，无需在此设置
 
 -- 确保从服务器是只读的
 SET GLOBAL read_only = 1;

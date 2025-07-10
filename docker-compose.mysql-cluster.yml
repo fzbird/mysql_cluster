@@ -26,8 +26,6 @@
 #
 # ========================================================================
 
-version: '3.8'
-
 services:
   # MySQL 主服务器
   mysql-master:
@@ -47,8 +45,6 @@ services:
       --innodb-flush-log-at-trx-commit=1
       --max-connections=1000
       --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
-      --query-cache-size=0
-      --query-cache-type=0
       --slow-query-log=1
       --long-query-time=2
       --general-log=1
@@ -146,8 +142,6 @@ services:
       --slave-preserve-commit-order=1
       --max-connections=1000
       --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
-      --query-cache-size=0
-      --query-cache-type=0
       --slow-query-log=1
       --long-query-time=2
       --general-log=1
@@ -340,21 +334,11 @@ volumes:
 networks:
   mysql-cluster-network:
     driver: bridge
-    name: mysql-cluster-network
-    # 使网络可被外部项目引用
-    external: false
-    # 网络配置
-    driver_opts:
-      com.docker.network.bridge.name: mysql-cluster-br
-      com.docker.network.bridge.enable_icc: "true"
-      com.docker.network.bridge.enable_ip_masquerade: "true"
-      com.docker.network.driver.mtu: "1500"
+    # 简化网络配置，避免跨平台兼容性问题
     ipam:
       driver: default
       config:
         - subnet: 172.24.0.0/16
-          gateway: 172.24.0.1
     labels:
       - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
-      - "network.type=mysql-cluster"
-      - "network.purpose=database-cluster" 
+      - "network.type=mysql-cluster" 

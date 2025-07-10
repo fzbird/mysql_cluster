@@ -2,11 +2,7 @@
 -- MySQL 主服务器初始化脚本
 -- ========================================================================
 
--- 设置全局配置
-SET GLOBAL enforce_gtid_consistency = ON;
-SET GLOBAL gtid_mode = OFF_PERMISSIVE;
-SET GLOBAL gtid_mode = ON_PERMISSIVE;
-SET GLOBAL gtid_mode = ON;
+-- GTID模式已在Docker启动参数中配置，无需在此设置
 
 -- 创建复制用户
 CREATE USER IF NOT EXISTS 'replicator'@'%' IDENTIFIED WITH mysql_native_password BY 'repl_password';

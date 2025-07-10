@@ -205,14 +205,8 @@ init_cluster() {
         fi
     done
     
-    # 检查并创建网络
-    if docker network ls | grep -q "$CLUSTER_NETWORK"; then
-        print_info "集群网络 $CLUSTER_NETWORK 已存在"
-    else
-        print_info "创建集群网络: $CLUSTER_NETWORK"
-        docker network create "$CLUSTER_NETWORK" --driver bridge
-        print_success "集群网络创建成功"
-    fi
+    # 网络由 Docker Compose 自动管理，无需手动创建
+    print_info "网络将由 Docker Compose 自动管理"
     
     print_success "集群环境初始化完成"
 }

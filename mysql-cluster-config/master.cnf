@@ -35,9 +35,7 @@ table-open-cache = 2000
 sort-buffer-size = 2M
 read-buffer-size = 2M
 
-# 查询缓存（MySQL 8.0 已弃用）
-query-cache-type = 0
-query-cache-size = 0
+# 查询缓存在 MySQL 8.0 中已移除，无需配置
 
 # 慢查询日志
 slow-query-log = 1
