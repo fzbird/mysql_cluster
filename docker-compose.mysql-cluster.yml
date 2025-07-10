@@ -256,26 +256,17 @@ services:
 
   # MySQL 监控服务
   mysql-monitor:
-    image: prom/mysqld-exporter:latest
+    image: prom/mysqld-exporter:v0.15.1
     container_name: mysql_monitor
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "root:${MYSQL_ROOT_PASSWORD:-fzbird20250615}@tcp(mysql-master:3306)/"
+      DATA_SOURCE_NAME: "monitor:monitor_password@tcp(mysql-master:3306)/"
     ports:
       - "${MYSQL_MONITOR_PORT:-9104}:9104"
-    command:
-      - '--collect.info_schema.processlist'
-      - '--collect.info_schema.innodb_metrics'
-      - '--collect.info_schema.tablestats'
-      - '--collect.info_schema.tables'
-      - '--collect.info_schema.userstats'
-      - '--collect.engine_innodb_status'
-      - '--collect.binlog_size'
-      - '--collect.info_schema.clientstats'
-      - '--collect.info_schema.innodb_tablespaces'
-      - '--collect.info_schema.query_response_time'
-      - '--collect.info_schema.replica_host'
-      - '--collect.info_schema.schemastats'
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "echo '[client]' > /tmp/.my.cnf && echo 'host=mysql-master' >> /tmp/.my.cnf && echo 'port=3306' >> /tmp/.my.cnf && echo 'user=monitor' >> /tmp/.my.cnf && echo 'password=monitor_password' >> /tmp/.my.cnf && /bin/mysqld_exporter --config.my-cnf=/tmp/.my.cnf --web.listen-address=0.0.0.0:9104"
     depends_on:
       mysql-master:
         condition: service_healthy
