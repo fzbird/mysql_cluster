@@ -1,0 +1,217 @@
+# =============================================================================
+# MySQL Cluster Project .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# MySQL Data and Logs
+# -----------------------------------------------------------------------------
+# Database data files (runtime generated)
+mysql-cluster-data/*/
+mysql-cluster-data/**/*
+!mysql-cluster-data/.gitkeep
+
+# Database log files (runtime generated)
+mysql-cluster-logs/*/
+mysql-cluster-logs/**/*
+!mysql-cluster-logs/.gitkeep
+
+# MySQL specific files
+*.ibd
+*.frm
+*.MYD
+*.MYI
+*.log
+*.pid
+*.sock
+*.err
+mysql-bin.*
+relay-bin.*
+ib_logfile*
+ibdata*
+
+# -----------------------------------------------------------------------------
+# Environment and Configuration
+# -----------------------------------------------------------------------------
+# Local environment files (may contain sensitive data)
+.env.local
+.env.production
+.env.development
+*.env.backup
+
+# Local configuration overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# SSL certificates and keys (if any)
+*.pem
+*.key
+*.crt
+*.csr
+
+# -----------------------------------------------------------------------------
+# Docker and Container Related
+# -----------------------------------------------------------------------------
+# Docker volumes and temporary files
+.docker/
+docker-compose.override.yml
+
+# Container runtime files
+*.pid
+*.sock
+
+# -----------------------------------------------------------------------------
+# Backup and Temporary Files
+# -----------------------------------------------------------------------------
+# Database backups (usually large files)
+*.sql.gz
+*.sql.zip
+*.dump
+*.backup
+backups/
+backup-*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.#*
+\#*#
+
+# -----------------------------------------------------------------------------
+# IDE and Editor Files
+# -----------------------------------------------------------------------------
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+.*.swp
+.*.swo
+Session.vim
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Nano
+.save
+
+# -----------------------------------------------------------------------------
+# Operating System Files
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# -----------------------------------------------------------------------------
+# Development and Testing
+# -----------------------------------------------------------------------------
+# Test results and coverage
+test-results/
+coverage/
+*.coverage
+.nyc_output/
+
+# Performance and monitoring data
+*.perf
+monitoring-data/
+
+# Debug and profiling
+debug.log
+profile.out
+
+# -----------------------------------------------------------------------------
+# Security and Sensitive Data
+# -----------------------------------------------------------------------------
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# API keys and secrets
+secrets/
+.secrets
+*.secret
+
+# -----------------------------------------------------------------------------
+# Project Specific Ignores
+# -----------------------------------------------------------------------------
+# Deployment artifacts
+deploy-*.log
+deployment-status.txt
+
+# Runtime generated configuration
+*.generated.conf
+runtime-config/
+
+# Custom scripts (may contain sensitive info)
+local-*.sh
+custom-*.sh
+personal-*.sh
+
+# Performance tuning files
+*.tune
+performance-*.conf
+
+# -----------------------------------------------------------------------------
+# Archives and Compressed Files
+# -----------------------------------------------------------------------------
+*.tar
+*.tar.gz
+*.tar.bz2
+*.zip
+*.rar
+*.7z
+*.gz
+*.bz2
+*.xz
+
+# -----------------------------------------------------------------------------
+# Keep Essential Empty Directories
+# -----------------------------------------------------------------------------
+# Use .gitkeep files to preserve directory structure
+!.gitkeep 

@@ -1,0 +1,2 @@
+# This file ensures the mysql-cluster-data directory is tracked by Git
+# while ignoring all actual data files within subdirectories 
