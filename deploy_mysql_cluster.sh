@@ -482,8 +482,8 @@ show_connection_info() {
     echo "🔑 连接示例:"
     echo "  写操作: mysql -h localhost -P $master_port -u root -p"
     echo "  读操作: mysql -h localhost -P $slave_port -u root -p"
-    echo "  应用连接(写): mysql+pymysql://root:password@localhost:$proxy_write_port/gallerydb"
-    echo "  应用连接(读): mysql+pymysql://gallery_reader:password@localhost:$proxy_read_port/gallerydb"
+    echo "  应用连接(写): mysql+pymysql://root:password@localhost:$proxy_write_port/gallery_db"
+    echo "  应用连接(读): mysql+pymysql://gallery_reader:password@localhost:$proxy_read_port/gallery_db"
 }
 
 # 显示集群日志
@@ -557,7 +557,7 @@ backup_cluster() {
     fi
     
     mysql_password="${mysql_password:-fzbird20250615}"
-    mysql_db="${mysql_db:-gallerydb}"
+    mysql_db="${mysql_db:-gallery_db}"
     
     if docker exec "$MASTER_CONTAINER" mysqldump -u root -p"$mysql_password" \
         --single-transaction --routines --triggers --events \
@@ -830,6 +830,11 @@ interactive_menu() {
 main() {
     # 检测平台
     detect_platform
+    
+    # 检测 Docker Compose
+    if ! detect_docker_compose; then
+        exit 1
+    fi
     
     # 如果没有参数，启动交互式菜单
     if [ $# -eq 0 ]; then

@@ -14,11 +14,11 @@ GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'monitor'@'%';
 
 -- 创建应用只读用户（用于从服务器）
 CREATE USER IF NOT EXISTS 'gallery_reader'@'%' IDENTIFIED WITH mysql_native_password BY 'reader_password';
-GRANT SELECT ON gallerydb.* TO 'gallery_reader'@'%';
+GRANT SELECT ON gallery_db.* TO 'gallery_reader'@'%';
 
 -- 创建应用读写用户（用于主服务器）
 CREATE USER IF NOT EXISTS 'gallery_writer'@'%' IDENTIFIED WITH mysql_native_password BY 'writer_password';
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX ON gallerydb.* TO 'gallery_writer'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX ON gallery_db.* TO 'gallery_writer'@'%';
 
 -- 刷新权限
 FLUSH PRIVILEGES;
@@ -30,4 +30,4 @@ FLUSH BINARY LOGS;
 SHOW MASTER STATUS;
 
 -- 创建Gallery数据库（如果不存在）
-CREATE DATABASE IF NOT EXISTS gallerydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; 
+CREATE DATABASE IF NOT EXISTS gallery_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; 

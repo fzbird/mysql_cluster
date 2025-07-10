@@ -11,7 +11,7 @@ server-id = 1
 # 二进制日志配置
 log-bin = mysql-bin
 binlog-format = ROW
-binlog-do-db = gallerydb
+binlog-do-db = gallery_db
 sync-binlog = 1
 expire-logs-days = 7
 max-binlog-size = 100M

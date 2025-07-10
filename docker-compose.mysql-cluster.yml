@@ -36,7 +36,7 @@ services:
       --server-id=1
       --log-bin=mysql-bin
       --binlog-format=ROW
-      --binlog-do-db=${MYSQL_DATABASE:-gallerydb}
+      --binlog-do-db=${MYSQL_DATABASE:-gallery_db}
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
       --binlog-checksum=CRC32
@@ -57,7 +57,7 @@ services:
     environment:
       # 基本配置
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fzbird20250615}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallerydb}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallery_db}
       MYSQL_USER: ${MYSQL_USER:-gallery_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gallery_password}
       
@@ -154,7 +154,7 @@ services:
     environment:
       # 基本配置
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fzbird20250615}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallerydb}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallery_db}
       MYSQL_USER: ${MYSQL_USER:-gallery_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gallery_password}
       

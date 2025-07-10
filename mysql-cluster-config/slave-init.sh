@@ -46,8 +46,8 @@ check_env_vars() {
     fi
     
     if [ -z "$MYSQL_DATABASE" ]; then
-        log_warning "MYSQL_DATABASE 环境变量未设置，使用默认值 'gallerydb'"
-        MYSQL_DATABASE="gallerydb"
+        log_warning "MYSQL_DATABASE 环境变量未设置，使用默认值 'gallery_db'"
+        MYSQL_DATABASE="gallery_db"
     fi
     
     if [ -z "$MYSQL_MASTER_HOST" ]; then
@@ -223,10 +223,10 @@ configure_replication() {
         return 0
     fi
     
-    # 创建临时 SQL 文件
-    local temp_sql="/tmp/slave-replication-temp.sql"
-    
-    cat > "$temp_sql" <<-EOSQL
+    # --- SQL 配置 ---
+    log_info "准备SQL配置以设置复制源..."
+    local temp_sql_config="/tmp/slave-replication-config.sql"
+    cat > "$temp_sql_config" <<-EOSQL
 -- 配置主从复制
 -- 生成时间: $(date)
 
@@ -243,32 +243,36 @@ CHANGE REPLICATION SOURCE TO
     SOURCE_USER='${MYSQL_REPLICATION_USER}',
     SOURCE_PASSWORD='${MYSQL_REPLICATION_PASSWORD}',
     SOURCE_AUTO_POSITION=1;
-
-echo "在从服务器上创建HAProxy健康检查用户..."
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SET GLOBAL super_read_only = OFF; CREATE USER IF NOT EXISTS 'haproxy_check'@'%' IDENTIFIED BY 'check_password'; SET GLOBAL super_read_only = ON;"
-
-echo "启动从服务器复制..."
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "START REPLICA;"
-
-echo "等待从服务器追赶主服务器..."
 EOSQL
     
-    # 执行 SQL 文件
-    if mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < "$temp_sql"; then
-        log_success "复制配置执行成功"
-        
-        # 删除临时文件
-        rm -f "$temp_sql"
-        
-        # 创建初始化完成标记
-        touch /tmp/slave-initialized
-        echo "$(date): Slave initialization completed" > /tmp/slave-initialized
-        
-    else
-        log_error "复制配置执行失败"
-        rm -f "$temp_sql"
+    log_info "执行SQL配置..."
+    if ! mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < "$temp_sql_config"; then
+        log_error "配置复制源失败"
+        rm -f "$temp_sql_config"
         exit 1
     fi
+    rm -f "$temp_sql_config"
+    log_success "复制源配置成功"
+
+    # --- 创建HAProxy用户 ---
+    log_info "在从服务器上创建HAProxy健康检查用户..."
+    if ! mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "SET GLOBAL super_read_only = OFF; CREATE USER IF NOT EXISTS 'haproxy_check'@'%' IDENTIFIED BY 'check_password'; GRANT USAGE ON *.* TO 'haproxy_check'@'%'; SET GLOBAL super_read_only = ON; FLUSH PRIVILEGES;"; then
+        log_error "创建HAProxy用户失败"
+        exit 1
+    fi
+    log_success "HAProxy用户创建成功"
+
+    # --- 启动复制 ---
+    log_info "启动从服务器复制..."
+    if ! mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "START REPLICA;"; then
+        log_error "启动复制失败"
+        exit 1
+    fi
+    log_success "复制启动成功"
+
+    # 创建初始化完成标记
+    touch /tmp/slave-initialized
+    echo "$(date): Slave initialization completed" > /tmp/slave-initialized
 }
 
 # 检查复制状态
