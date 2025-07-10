@@ -37,6 +37,7 @@ ibdata*
 .env.production
 .env.development
 *.env.backup
+*.env
 
 # Local configuration overrides
 docker-compose.override.yml
