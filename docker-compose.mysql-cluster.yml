@@ -1,0 +1,360 @@
+# ========================================================================
+# MySQL 主从复制集群配置 - 跨平台兼容版本
+# ========================================================================
+# 
+# 支持系统: Windows, Linux, macOS
+# 此文件定义了 MySQL 主从复制集群，包含一个主服务器和一个从服务器
+# 提供高可用性、读写分离和数据备份功能
+# 
+# 使用方法:
+#   1. 启动集群: docker-compose -f docker-compose.mysql-cluster.yml up -d
+#   2. 停止集群: docker-compose -f docker-compose.mysql-cluster.yml down
+#   3. 查看状态: docker-compose -f docker-compose.mysql-cluster.yml ps
+#   4. 初始化复制: ./deploy_mysql_cluster.sh setup-replication
+#
+# 架构说明:
+#   - mysql-master: 主服务器，处理写操作
+#   - mysql-slave: 从服务器，处理读操作
+#   - mysql-proxy: HAProxy负载均衡器，实现读写分离
+#   - mysql-monitor: MySQL监控服务，提供性能指标
+#
+# 网络配置:
+#   - 集群网络: mysql-cluster-network
+#   - 主服务器: mysql_master:3306
+#   - 从服务器: mysql_slave:3306
+#   - 外部访问: localhost:3306 (主), localhost:3307 (从)
+#
+# ========================================================================
+
+version: '3.8'
+
+services:
+  # MySQL 主服务器
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql_master
+    restart: unless-stopped
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --binlog-do-db=${MYSQL_DATABASE:-gallerydb}
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --binlog-checksum=CRC32
+      --master-verify-checksum=1
+      --sync-binlog=1
+      --innodb-flush-log-at-trx-commit=1
+      --max-connections=1000
+      --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
+      --query-cache-size=0
+      --query-cache-type=0
+      --slow-query-log=1
+      --long-query-time=2
+      --general-log=1
+      --default-time-zone='+08:00'
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max-binlog-size=100M
+      --expire-logs-days=7
+    
+    environment:
+      # 基本配置
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fzbird20250615}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallerydb}
+      MYSQL_USER: ${MYSQL_USER:-gallery_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gallery_password}
+      
+      # 复制用户配置
+      MYSQL_REPLICATION_USER: ${MYSQL_REPLICATION_USER:-replicator}
+      MYSQL_REPLICATION_PASSWORD: ${MYSQL_REPLICATION_PASSWORD:-repl_password_2024}
+      
+      # MySQL 8.0 优化配置
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    
+    volumes:
+      # 主服务器数据持久化（跨平台兼容）
+      - mysql_master_data:/var/lib/mysql
+      
+      # 主服务器配置文件
+      - ./mysql-cluster-config/master.cnf:/etc/mysql/conf.d/mysql.cnf:ro
+      
+      # 初始化脚本
+      - ./mysql-cluster-config/init-master.sql:/docker-entrypoint-initdb.d/01-init-master.sql:ro
+      
+      # 自定义初始化脚本
+      - ./mysql-cluster-config/master-init.sh:/docker-entrypoint-initdb.d/02-master-init.sh:ro
+      
+      # 日志目录（跨平台兼容）
+      - mysql_master_logs:/var/log/mysql
+      
+      # 临时文件目录
+      - mysql_master_tmp:/tmp
+    
+    ports:
+      # 主服务器端口映射
+      - "${MYSQL_MASTER_PORT:-3306}:3306"
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-fzbird20250615}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 80s
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    networks:
+      - mysql-cluster-network
+    
+    # 标签
+    labels:
+      - "mysql.role=master"
+      - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
+      - "mysql.version=8.0"
+
+  # MySQL 从服务器
+  mysql-slave:
+    image: mysql:8.0
+    container_name: mysql_slave
+    restart: unless-stopped
+    command: >
+      --server-id=2
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --binlog-checksum=CRC32
+      --slave-sql-verify-checksum=1
+      --relay-log=mysql-relay-bin
+      --log-slave-updates=1
+      --read-only=1
+      --super-read-only=1
+      --skip-slave-start=1
+      --slave-parallel-type=LOGICAL_CLOCK
+      --slave-parallel-workers=4
+      --slave-preserve-commit-order=1
+      --max-connections=1000
+      --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
+      --query-cache-size=0
+      --query-cache-type=0
+      --slow-query-log=1
+      --long-query-time=2
+      --general-log=1
+      --default-time-zone='+08:00'
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max-binlog-size=100M
+      --expire-logs-days=7
+    
+    environment:
+      # 基本配置
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fzbird20250615}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallerydb}
+      MYSQL_USER: ${MYSQL_USER:-gallery_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gallery_password}
+      
+      # 复制配置
+      MYSQL_MASTER_HOST: mysql-master
+      MYSQL_MASTER_PORT: 3306
+      MYSQL_REPLICATION_USER: ${MYSQL_REPLICATION_USER:-replicator}
+      MYSQL_REPLICATION_PASSWORD: ${MYSQL_REPLICATION_PASSWORD:-repl_password_2024}
+      
+      # MySQL 8.0 优化配置
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    
+    volumes:
+      # 从服务器数据持久化（跨平台兼容）
+      - mysql_slave_data:/var/lib/mysql
+      
+      # 从服务器配置文件
+      - ./mysql-cluster-config/slave.cnf:/etc/mysql/conf.d/mysql.cnf:ro
+      
+      # 初始化脚本
+      - ./mysql-cluster-config/init-slave.sql:/docker-entrypoint-initdb.d/01-init-slave.sql:ro
+      
+      # 自定义初始化脚本
+      - ./mysql-cluster-config/slave-init.sh:/docker-entrypoint-initdb.d/02-slave-init.sh:ro
+      
+      # 日志目录（跨平台兼容）
+      - mysql_slave_logs:/var/log/mysql
+      
+      # 临时文件目录
+      - mysql_slave_tmp:/tmp
+    
+    ports:
+      # 从服务器端口映射
+      - "${MYSQL_SLAVE_PORT:-3307}:3306"
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-fzbird20250615}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 80s
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    
+    networks:
+      - mysql-cluster-network
+    
+    # 标签
+    labels:
+      - "mysql.role=slave"
+      - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
+      - "mysql.version=8.0"
+
+  # HAProxy 负载均衡器
+  mysql-proxy:
+    image: haproxy:2.8
+    container_name: mysql_proxy
+    restart: unless-stopped
+    volumes:
+      - ./mysql-cluster-config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      # 读写分离端口
+      - "${MYSQL_PROXY_WRITE_PORT:-3308}:3308"  # 写操作端口（指向主服务器）
+      - "${MYSQL_PROXY_READ_PORT:-3309}:3309"   # 读操作端口（指向从服务器）
+      - "${MYSQL_PROXY_STATS_PORT:-8404}:8404"  # 统计页面端口
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      mysql-slave:
+        condition: service_healthy
+    networks:
+      - mysql-cluster-network
+    labels:
+      - "mysql.role=proxy"
+      - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
+      - "haproxy.version=2.8"
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8404/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # MySQL 监控服务
+  mysql-monitor:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql_monitor
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "root:${MYSQL_ROOT_PASSWORD:-fzbird20250615}@(mysql-master:3306)/"
+    ports:
+      - "${MYSQL_MONITOR_PORT:-9104}:9104"
+    command:
+      - '--collect.info_schema.processlist'
+      - '--collect.info_schema.innodb_metrics'
+      - '--collect.info_schema.tablestats'
+      - '--collect.info_schema.tables'
+      - '--collect.info_schema.userstats'
+      - '--collect.engine_innodb_status'
+      - '--collect.binlog_size'
+      - '--collect.info_schema.clientstats'
+      - '--collect.info_schema.innodb_tablespaces'
+      - '--collect.info_schema.query_response_time'
+      - '--collect.info_schema.replica_host'
+      - '--collect.slave_lag'
+      - '--collect.slave_hosts'
+      - '--collect.info_schema.schemastats'
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    networks:
+      - mysql-cluster-network
+    labels:
+      - "mysql.role=monitor"
+      - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
+      - "prometheus.exporter=mysqld"
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9104/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# 数据卷定义（跨平台兼容）
+volumes:
+  # 主服务器数据卷
+  mysql_master_data:
+    driver: local
+    # 不使用 driver_opts 确保跨平台兼容性
+    # Docker 会自动创建合适的卷
+    name: mysql_master_data
+  
+  # 从服务器数据卷
+  mysql_slave_data:
+    driver: local
+    name: mysql_slave_data
+  
+  # 主服务器日志卷
+  mysql_master_logs:
+    driver: local
+    name: mysql_master_logs
+  
+  # 从服务器日志卷
+  mysql_slave_logs:
+    driver: local
+    name: mysql_slave_logs
+  
+  # 主服务器临时文件卷
+  mysql_master_tmp:
+    driver: local
+    name: mysql_master_tmp
+  
+  # 从服务器临时文件卷
+  mysql_slave_tmp:
+    driver: local
+    name: mysql_slave_tmp
+
+# 网络定义
+networks:
+  mysql-cluster-network:
+    driver: bridge
+    name: mysql-cluster-network
+    # 使网络可被外部项目引用
+    external: false
+    # 网络配置
+    driver_opts:
+      com.docker.network.bridge.name: mysql-cluster-br
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.driver.mtu: "1500"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.24.0.0/16
+          gateway: 172.24.0.1
+    labels:
+      - "mysql.cluster=${MYSQL_CLUSTER_NAME:-gallery-cluster}"
+      - "network.type=mysql-cluster"
+      - "network.purpose=database-cluster" 

@@ -1,0 +1,80 @@
+# ========================================================================
+# MySQL 主服务器配置文件
+# ========================================================================
+
+[mysqld]
+# 服务器标识
+server-id = 1
+
+# 二进制日志配置
+log-bin = mysql-bin
+binlog-format = ROW
+binlog-do-db = gallerydb
+sync-binlog = 1
+expire-logs-days = 7
+max-binlog-size = 100M
+
+# 事务配置
+innodb-flush-log-at-trx-commit = 1
+innodb-support-xa = 1
+
+# 连接配置
+max-connections = 1000
+max-connect-errors = 10000
+connect-timeout = 60
+wait-timeout = 28800
+interactive-timeout = 28800
+
+# 内存配置
+innodb-buffer-pool-size = 256M
+innodb-buffer-pool-instances = 2
+innodb-log-file-size = 64M
+innodb-log-buffer-size = 16M
+key-buffer-size = 32M
+table-open-cache = 2000
+sort-buffer-size = 2M
+read-buffer-size = 2M
+
+# 查询缓存（MySQL 8.0 已弃用）
+query-cache-type = 0
+query-cache-size = 0
+
+# 慢查询日志
+slow-query-log = 1
+slow-query-log-file = /var/log/mysql/mysql-slow.log
+long-query-time = 2
+
+# 通用日志
+general-log = 1
+general-log-file = /var/log/mysql/mysql-general.log
+
+# 错误日志
+log-error = /var/log/mysql/mysql-error.log
+
+# 字符集配置
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# 时区配置
+default-time-zone = '+08:00'
+
+# InnoDB 配置
+innodb-file-per-table = 1
+innodb-flush-method = O_DIRECT
+innodb-lock-wait-timeout = 50
+
+# 安全配置
+sql-mode = STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO
+
+# 临时文件配置
+tmp-table-size = 64M
+max-heap-table-size = 64M
+
+# MyISAM 配置
+myisam-sort-buffer-size = 8M
+
+[mysql]
+default-character-set = utf8mb4
+
+[client]
+default-character-set = utf8mb4 
